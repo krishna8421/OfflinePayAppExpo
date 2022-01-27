@@ -5,7 +5,7 @@ import Auth from "./screens/Auth";
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwtDecode, { JwtPayload } from "jwt-decode";
-import { Button } from "react-native-elements";
+import DashBoard from "./screens/DashBoard";
 
 export default function App() {
   const [isLogin, setIsLogin] = useState<boolean>(false);
@@ -27,8 +27,7 @@ export default function App() {
     checkAuth();
   }, []);
 
-  useEffect(() => {
-  }, [isLogin]);
+  useEffect(() => {}, [isLogin]);
 
   if (!isLogin) {
     return (
@@ -40,20 +39,7 @@ export default function App() {
       </SafeAreaProvider>
     );
   }
-  return (
-    <SafeAreaProvider>
-      <View>
-        <Text>Welcome {name}</Text>
-        <Button
-          title="Logout"
-          onPress={async () => {
-            await AsyncStorage.removeItem("@jwt_token");
-          }}
-        />
-      </View>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
-  );
+  return <DashBoard name={name} />;
 }
 
 const styles = StyleSheet.create({

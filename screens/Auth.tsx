@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { useState } from "react";
+import { View, StyleSheet, Image } from "react-native";
 import Login from "../components/Login";
 import Register from "../components/Register";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import jwtDecode, { JwtPayload } from "jwt-decode";
 
 export default function Auth() {
   const [login, setLogin] = useState<boolean>(true);
