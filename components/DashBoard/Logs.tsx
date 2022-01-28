@@ -1,6 +1,4 @@
-import { View, StyleSheet, Text, ScrollView, SafeAreaView } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useState } from "react";
+import { View, StyleSheet, Text } from "react-native";
 import { Divider } from "react-native-elements";
 
 type Props = {

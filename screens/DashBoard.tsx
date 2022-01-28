@@ -3,15 +3,17 @@ import { StyleSheet, View, Text } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Nav from "../components/DashBoard/Nav";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useState } from "react";
+import React, { useState } from "react";
 import Transfer from "../components/DashBoard/Transfer";
 import Logs from "../components/DashBoard/Logs";
-import { Overlay } from "react-native-elements";
-import { TouchableWithoutFeedback, Button } from "react-native";
+import { Overlay, Button } from "react-native-elements";
+import { TouchableWithoutFeedback } from "react-native";
 import { useEffect } from "react";
-import axios from "axios";
 import NetInfo from "@react-native-community/netinfo";
 import { Entypo } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { reFetch } from "../utils/reFetch";
+import * as Updates from "expo-updates";
 
 type Props = {
   name: string;
@@ -21,11 +23,19 @@ export default function DashBoard({ name }: Props) {
   const [showTransferMenu, setShowTransferMenu] = useState<boolean>(false);
   const [showLogMenu, setShowLogMenu] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
-  // const [refetch, setRefetch] = useState<boolean>(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [token, setToken] = useState<string>("null");
   const [isConnectedToNet, setIsConnectedToNet] = useState<boolean | null>(
     false
   );
+  useEffect(() => {
+    const getLocalToken = async () => {
+      const token = await AsyncStorage.getItem("@jwt_token");
+      if (!token) return;
+      setToken(token);
+    };
+    getLocalToken();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -35,33 +45,6 @@ export default function DashBoard({ name }: Props) {
       unsubscribe();
     };
   }, []);
-
-  // useEffect(() => {
-  //   const getLog = async () => {
-  //     if (!isConnectedToNet) return;
-  //     const sessionToken = await AsyncStorage.getItem("@jwt_token");
-  //     const resLog = await axios.get(
-  //       "https://offline-pay.vercel.app/api/data",
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${sessionToken}`,
-  //         },
-  //       }
-  //     );
-  //     const { logs, balance } = resLog.data;
-  //     setBalance(balance);
-  //     await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
-  //     await AsyncStorage.setItem("@logs", JSON.stringify(logs));
-  //   };
-  //   getLog();
-  //   setRefetch(false);
-  // }, [refetch]);
-
-  // const reFetch = () => {
-  //   setRefetch(true);
-  // };
-
   const toggleTransferOverlay = () => {
     setShowTransferMenu(!showTransferMenu);
   };
@@ -106,10 +89,12 @@ export default function DashBoard({ name }: Props) {
               <Text style={styles.transferText}>Transfer</Text>
             </View>
           </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={()=>{
-            toggleLogOverlay()
-            getLogs()
-          }}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              toggleLogOverlay();
+              getLogs();
+            }}
+          >
             <View style={styles.logs}>
               <Text style={styles.logText}>Logs</Text>
             </View>
@@ -120,11 +105,14 @@ export default function DashBoard({ name }: Props) {
           onBackdropPress={toggleTransferOverlay}
           overlayStyle={styles.overlayLayoutTransfer}
         >
-          <Transfer
-            // reFetch={() => {
-            //   reFetch();
-            // }}
-          />
+          <KeyboardAwareScrollView
+            keyboardShouldPersistTaps={"always"}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ alignItems: "center" }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Transfer closeTransfer={toggleTransferOverlay} />
+          </KeyboardAwareScrollView>
         </Overlay>
         <Overlay
           isVisible={showLogMenu}
@@ -141,6 +129,36 @@ export default function DashBoard({ name }: Props) {
           />
         </Overlay>
       </View>
+      <Button
+        onPress={async () => {
+          const newData = await reFetch(token);
+          const { logs, balance } = newData;
+          await AsyncStorage.setItem(
+            "@current_balance",
+            JSON.stringify(balance)
+          );
+          await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+          Updates.reloadAsync();
+        }}
+        icon={{
+          name: "refresh",
+          type: "font-awesome",
+          size: 30,
+          color: "white",
+        }}
+        iconContainerStyle={{ marginRight: 6, marginVertical: 5 }}
+        buttonStyle={{
+          backgroundColor: "rgba(251, 113, 15, 0.8)",
+          borderColor: "transparent",
+          borderRadius: 30,
+          padding: 5,
+        }}
+        containerStyle={{
+          position: "absolute",
+          bottom: 60,
+          right: 40,
+        }}
+      />
       <StatusBar style="auto" />
     </SafeAreaProvider>
   );
@@ -215,13 +233,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   overlayLayoutLogs: {
-    height: "70%",
+    height: "85%",
     width: "90%",
     borderRadius: 10,
   },
   overlayLayoutTransfer: {
-    height: "50%",
+    height: "70%",
     width: "90%",
+    justifyContent: "center",
+    position: "absolute",
     borderRadius: 10,
   },
   closeLogs: {

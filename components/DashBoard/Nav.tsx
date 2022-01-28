@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View, Text, Platform } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { Image } from "react-native-elements";
 import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,7 +19,7 @@ export default function Nav() {
     return () => {
       unsubscribe();
     };
-  },[]);
+  }, []);
 
   const logout = async () => {
     await AsyncStorage.removeItem("@jwt_token");

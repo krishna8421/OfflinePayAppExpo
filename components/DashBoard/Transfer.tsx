@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwtDecode, { JwtPayload } from "jwt-decode";
 import axios from "axios";
@@ -11,12 +11,11 @@ import { Button, Input } from "react-native-elements";
 import * as Updates from "expo-updates";
 import { reFetch } from "../../utils/reFetch";
 
-// interface Props {
-//   reFetch: () => void;
-// }
+interface Props {
+  closeTransfer: () => void;
+}
 
-// export default function Transfer({ reFetch }: Props) {
-export default function Transfer() {
+export default function Transfer({ closeTransfer }: Props) {
   const [error, setError] = useState({
     status: false,
     message: "",
@@ -162,6 +161,19 @@ export default function Transfer() {
               // @ts-ignore
               onPress={handleSubmit}
             />
+            <Button
+              title="Cancel"
+              buttonStyle={{ backgroundColor: "rgba(255, 7, 7, 0.8)" }}
+              containerStyle={{
+                width: 200,
+                height: 50,
+                marginHorizontal: 50,
+                marginVertical: 9,
+              }}
+              titleStyle={{ color: "white", marginHorizontal: 20 }}
+              // @ts-ignore
+              onPress={closeTransfer}
+            />
             <Text style={styles.backendErrText}>
               {error.status ? error.message : ""}{" "}
             </Text>
@@ -176,7 +188,8 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     alignItems: "center",
-    marginVertical: 10,
+    justifyContent: "center",
+    marginVertical: 15,
   },
   Heading: {
     fontSize: 25,
