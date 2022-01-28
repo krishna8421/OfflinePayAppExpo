@@ -21,7 +21,8 @@ export default function DashBoard({ name }: Props) {
   const [showTransferMenu, setShowTransferMenu] = useState<boolean>(false);
   const [showLogMenu, setShowLogMenu] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
-  const [refetch, setRefetch] = useState<boolean>(false);
+  // const [refetch, setRefetch] = useState<boolean>(false);
+  const [logs, setLogs] = useState<string[]>([]);
   const [isConnectedToNet, setIsConnectedToNet] = useState<boolean | null>(
     false
   );
@@ -35,31 +36,31 @@ export default function DashBoard({ name }: Props) {
     };
   }, []);
 
-  useEffect(() => {
-    const getLog = async () => {
-      if (!isConnectedToNet) return;
-      const sessionToken = await AsyncStorage.getItem("@jwt_token");
-      const resLog = await axios.get(
-        "https://offline-pay.vercel.app/api/data",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionToken}`,
-          },
-        }
-      );
-      const { logs, balance } = resLog.data;
-      setBalance(balance);
-      await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
-      await AsyncStorage.setItem("@logs", JSON.stringify(logs));
-    };
-    getLog();
-    setRefetch(false);
-  }, [refetch]);
+  // useEffect(() => {
+  //   const getLog = async () => {
+  //     if (!isConnectedToNet) return;
+  //     const sessionToken = await AsyncStorage.getItem("@jwt_token");
+  //     const resLog = await axios.get(
+  //       "https://offline-pay.vercel.app/api/data",
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${sessionToken}`,
+  //         },
+  //       }
+  //     );
+  //     const { logs, balance } = resLog.data;
+  //     setBalance(balance);
+  //     await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
+  //     await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+  //   };
+  //   getLog();
+  //   setRefetch(false);
+  // }, [refetch]);
 
-  const reFetch = () => {
-    setRefetch(true);
-  };
+  // const reFetch = () => {
+  //   setRefetch(true);
+  // };
 
   const toggleTransferOverlay = () => {
     setShowTransferMenu(!showTransferMenu);
@@ -77,6 +78,13 @@ export default function DashBoard({ name }: Props) {
     }
     setBalance(parseInt(balance, 10));
   })();
+
+  const getLogs = async () => {
+    const log = await AsyncStorage.getItem("@logs");
+    if (!log) return;
+    const logArr = JSON.parse(log);
+    setLogs(logArr);
+  };
 
   return (
     <SafeAreaProvider>
@@ -98,7 +106,10 @@ export default function DashBoard({ name }: Props) {
               <Text style={styles.transferText}>Transfer</Text>
             </View>
           </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={toggleLogOverlay}>
+          <TouchableWithoutFeedback onPress={()=>{
+            toggleLogOverlay()
+            getLogs()
+          }}>
             <View style={styles.logs}>
               <Text style={styles.logText}>Logs</Text>
             </View>
@@ -107,19 +118,20 @@ export default function DashBoard({ name }: Props) {
         <Overlay
           isVisible={showTransferMenu}
           onBackdropPress={toggleTransferOverlay}
+          overlayStyle={styles.overlayLayoutTransfer}
         >
           <Transfer
-            reFetch={() => {
-              reFetch();
-            }}
+            // reFetch={() => {
+            //   reFetch();
+            // }}
           />
         </Overlay>
         <Overlay
           isVisible={showLogMenu}
           onBackdropPress={toggleLogOverlay}
-          overlayStyle={styles.overlayLogs}
+          overlayStyle={styles.overlayLayoutLogs}
         >
-          <Logs />
+          <Logs logs={logs} />
           <Entypo
             name="circle-with-cross"
             size={50}
@@ -202,8 +214,13 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: "500",
   },
-  overlayLogs: {
+  overlayLayoutLogs: {
     height: "70%",
+    width: "90%",
+    borderRadius: 10,
+  },
+  overlayLayoutTransfer: {
+    height: "50%",
     width: "90%",
     borderRadius: 10,
   },

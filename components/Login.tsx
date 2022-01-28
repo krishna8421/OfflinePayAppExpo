@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import { Fragment } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Button, Input } from "react-native-elements";
 import { useState } from "react";

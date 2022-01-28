@@ -3,17 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { Divider } from "react-native-elements";
 
-export default function Logs() {
-  const [logs, setLogs] = useState<string[]>([]);
+type Props = {
+  logs: string[];
+};
 
-  const getLogs = async () => {
-    const log = await AsyncStorage.getItem("@logs");
-    if (!log) return;
-    const logArr = JSON.parse(log);
-    setLogs(logArr);
-  };
-  getLogs();
-
+export default function Logs({ logs }: Props) {
   return (
     <View style={styles.logView}>
       {logs

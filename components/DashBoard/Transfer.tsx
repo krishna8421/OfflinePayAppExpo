@@ -1,18 +1,22 @@
-import React, { useState } from "react";
+import { useState, Fragment } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwtDecode, { JwtPayload } from "jwt-decode";
 import axios from "axios";
 import * as Yup from "yup";
-import { View, Text,StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useEffect } from "react";
+import { Formik } from "formik";
+import { Button, Input } from "react-native-elements";
+import * as Updates from "expo-updates";
+import { reFetch } from "../../utils/reFetch";
 
+// interface Props {
+//   reFetch: () => void;
+// }
 
-interface Props {
-  reFetch: () => void;
-}
-
-export default function Transfer({ reFetch }: Props) {
+// export default function Transfer({ reFetch }: Props) {
+export default function Transfer() {
   const [error, setError] = useState({
     status: false,
     message: "",
@@ -45,12 +49,15 @@ export default function Transfer({ reFetch }: Props) {
     // @ts-ignore
     const { num } = decoded;
     const { num: num_to, amount } = data;
-    
+
     // Offline Transfer Logic
     if (!isConnectedToNet) {
       const localBal = await AsyncStorage.getItem("@current_balance");
-      if(localBal==null) return
-      await AsyncStorage.setItem("@current_balance", JSON.stringify(parseInt(localBal, 10)  - amount));
+      if (localBal == null) return;
+      await AsyncStorage.setItem(
+        "@current_balance",
+        JSON.stringify(parseInt(localBal, 10) - amount)
+      );
       return;
     }
     const res = await axios.post(
@@ -79,7 +86,11 @@ export default function Transfer({ reFetch }: Props) {
         message: "",
       });
     }
-    reFetch();
+    const refetchData = await reFetch(sessionToken);
+    const { logs, balance } = refetchData;
+    await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
+    await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+    Updates.reloadAsync();
   };
 
   const transferSchema = Yup.object().shape({
@@ -92,8 +103,93 @@ export default function Transfer({ reFetch }: Props) {
       .required("Required"),
   });
   return (
-    <View>
-      <Text> Hoala </Text>
+    <View style={styles.View}>
+      <Text style={styles.Heading}> Transfer </Text>
+      <Formik
+        initialValues={{
+          num: "",
+          amount: "",
+        }}
+        validationSchema={transferSchema}
+        onSubmit={(values, actions) => {
+          setTimeout(async () => {
+            const { num, amount } = values;
+            await transferMoney({
+              num: parseInt(num, 10),
+              amount: parseInt(amount, 10),
+            });
+            actions.setSubmitting(false);
+          }, 1000);
+        }}
+      >
+        {({
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          values,
+          errors,
+        }) => (
+          <View style={styles.FormBox}>
+            <Input
+              label="Number"
+              errorMessage={errors.num}
+              autoCompleteType="tel"
+              onChangeText={handleChange("num")}
+              onBlur={handleBlur("num")}
+              value={values.num}
+              maxLength={10}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Amount"
+              errorMessage={errors.amount}
+              onChangeText={handleChange("amount")}
+              onBlur={handleBlur("amount")}
+              value={values.amount}
+              keyboardType="numeric"
+            />
+            <Button
+              title="Submit"
+              loading={isSubmitting}
+              buttonStyle={{ backgroundColor: "rgba(39, 39, 39, 1)" }}
+              containerStyle={{
+                width: 200,
+                marginHorizontal: 50,
+                marginVertical: 10,
+              }}
+              titleStyle={{ color: "white", marginHorizontal: 20 }}
+              // @ts-ignore
+              onPress={handleSubmit}
+            />
+            <Text style={styles.backendErrText}>
+              {error.status ? error.message : ""}{" "}
+            </Text>
+          </View>
+        )}
+      </Formik>
     </View>
   );
 }
+const styles = StyleSheet.create({
+  View: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  Heading: {
+    fontSize: 25,
+    fontWeight: "300",
+  },
+  backendErrText: {
+    fontSize: 15,
+    fontWeight: "300",
+    color: "red",
+  },
+  FormBox: {
+    width: "80%",
+    marginVertical: 60,
+    alignItems: "center",
+  },
+});
