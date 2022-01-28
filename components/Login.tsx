@@ -51,6 +51,7 @@ export default function Login({ setLogin }: any) {
       const { logs, balance } = resLog.data;
       await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
       await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+      await AsyncStorage.setItem("@to_sync" ,"")
 
       Updates.reloadAsync();
     }

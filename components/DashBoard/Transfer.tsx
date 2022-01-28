@@ -10,6 +10,7 @@ import { Formik } from "formik";
 import { Button, Input } from "react-native-elements";
 import * as Updates from "expo-updates";
 import { reFetch } from "../../utils/reFetch";
+import moment from "moment";
 
 interface Props {
   closeTransfer: () => void;
@@ -51,14 +52,40 @@ export default function Transfer({ closeTransfer }: Props) {
 
     // Offline Transfer Logic
     if (!isConnectedToNet) {
-      const localBal = await AsyncStorage.getItem("@current_balance");
-      if (localBal == null) return;
-      await AsyncStorage.setItem(
-        "@current_balance",
-        JSON.stringify(parseInt(localBal, 10) - amount)
+      const localBalString = await AsyncStorage.getItem("@current_balance");
+      if (!localBalString) return;
+      const localBal = parseInt(localBalString, 10);
+      const localLogsString = await AsyncStorage.getItem("@logs");
+      if (!localLogsString) return;
+      let toSyncArrStr = await AsyncStorage.getItem("@to_sync");
+      let toSyncArr;
+      if (!toSyncArrStr) toSyncArrStr = "[]";
+      toSyncArr = JSON.parse(toSyncArrStr);
+      const toSyncItem = {
+        num,
+        num_to,
+        amount,
+      };
+      toSyncArr.push(toSyncItem);
+      let logsArrStr = await AsyncStorage.getItem("@logs");
+      let logsArr;
+      if (!logsArrStr) logsArrStr = "[]";
+      logsArr = JSON.parse(logsArrStr);
+      logsArr.push(
+        `[${moment().format(
+          "Do MMM YYYY, h:mm a"
+        )}] Send Rs.${amount} to +91${num_to}`
       );
+
+      const newAmount = localBal - amount;
+      await AsyncStorage.setItem("@current_balance", JSON.stringify(newAmount));
+      await AsyncStorage.setItem("@to_sync", JSON.stringify(toSyncArr));
+
+      // SMS Logic
+
       return;
     }
+
     const res = await axios.post(
       "https://offline-pay.vercel.app/api/transfer",
       {

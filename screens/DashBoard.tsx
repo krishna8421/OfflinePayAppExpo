@@ -24,18 +24,28 @@ export default function DashBoard({ name }: Props) {
   const [showLogMenu, setShowLogMenu] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
   const [logs, setLogs] = useState<string[]>([]);
-  const [token, setToken] = useState<string>("null");
+  // const [token, setToken] = useState<string>("null");
   const [isConnectedToNet, setIsConnectedToNet] = useState<boolean | null>(
-    false
+    true
   );
-  useEffect(() => {
-    const getLocalToken = async () => {
-      const token = await AsyncStorage.getItem("@jwt_token");
-      if (!token) return;
-      setToken(token);
-    };
-    getLocalToken();
-  }, []);
+  // useEffect(() => {
+  //   const getLocalToken = async () => {
+  //     const token = await AsyncStorage.getItem("@jwt_token");
+  //     if (!token) return;
+  //     setToken(token);
+  //   };
+  //   getLocalToken();
+  // }, []);
+  const sleep = (ms = 1000) => new Promise((r) => setTimeout(r, ms));
+  const sync = async () => {
+    const token = await AsyncStorage.getItem("@jwt_token");
+    await sleep();
+    if (!token) return;
+    const newData = await reFetch(token);
+    const { logs, balance } = newData;
+    await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
+    await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+  };
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -131,14 +141,12 @@ export default function DashBoard({ name }: Props) {
       </View>
       <Button
         onPress={async () => {
-          const newData = await reFetch(token);
-          const { logs, balance } = newData;
-          await AsyncStorage.setItem(
-            "@current_balance",
-            JSON.stringify(balance)
-          );
-          await AsyncStorage.setItem("@logs", JSON.stringify(logs));
-          Updates.reloadAsync();
+          if (isConnectedToNet) {
+            await sync();
+            Updates.reloadAsync();
+          } else {
+            alert("Please connect to internet");
+          }
         }}
         icon={{
           name: "refresh",

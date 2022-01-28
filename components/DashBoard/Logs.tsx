@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
   logView: {
     alignItems: "center",
     width: "100%",
-    height: "100%",
-    overflow: "scroll",
+    height: "93%",
+    overflow: "hidden",
   },
   logTextView: {
     marginVertical: 8,

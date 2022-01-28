@@ -41,7 +41,6 @@ export default function Register({ setLogin }: any) {
       });
       await AsyncStorage.setItem("@jwt_token", res.data.token);
       await AsyncStorage.setItem("@current_balance", "0");
-      await AsyncStorage.setItem("@logs", "");
       Updates.reloadAsync();
     }
   };
