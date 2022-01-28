@@ -3,7 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwtDecode, { JwtPayload } from "jwt-decode";
 import axios from "axios";
 import * as Yup from "yup";
-import { View, Text } from "react-native";
+import { View, Text,StyleSheet } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
+import { useEffect } from "react";
+
 
 interface Props {
   reFetch: () => void;
@@ -14,6 +17,18 @@ export default function Transfer({ reFetch }: Props) {
     status: false,
     message: "",
   });
+  const [isConnectedToNet, setIsConnectedToNet] = useState<boolean | null>(
+    false
+  );
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnectedToNet(state.isConnected);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   type TransferData = {
     num: number;
@@ -29,8 +44,15 @@ export default function Transfer({ reFetch }: Props) {
 
     // @ts-ignore
     const { num } = decoded;
-
     const { num: num_to, amount } = data;
+    
+    // Offline Transfer Logic
+    if (!isConnectedToNet) {
+      const localBal = await AsyncStorage.getItem("@current_balance");
+      if(localBal==null) return
+      await AsyncStorage.setItem("@current_balance", JSON.stringify(parseInt(localBal, 10)  - amount));
+      return;
+    }
     const res = await axios.post(
       "https://offline-pay.vercel.app/api/transfer",
       {

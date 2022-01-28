@@ -5,10 +5,13 @@ import Nav from "../components/DashBoard/Nav";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import Transfer from "../components/DashBoard/Transfer";
-import { Button, Overlay } from "react-native-elements";
-import { TouchableWithoutFeedback } from "react-native";
+import Logs from "../components/DashBoard/Logs";
+import { Overlay } from "react-native-elements";
+import { TouchableWithoutFeedback, Button } from "react-native";
 import { useEffect } from "react";
 import axios from "axios";
+import NetInfo from "@react-native-community/netinfo";
+import { Entypo } from "@expo/vector-icons";
 
 type Props = {
   name: string;
@@ -19,27 +22,40 @@ export default function DashBoard({ name }: Props) {
   const [showLogMenu, setShowLogMenu] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
   const [refetch, setRefetch] = useState<boolean>(false);
-  const [logs, setLogs] = useState<String[]>([]);
+  const [isConnectedToNet, setIsConnectedToNet] = useState<boolean | null>(
+    false
+  );
 
-  // useEffect(() => {
-  //   const getLog = async () => {
-  //     const sessionToken = await AsyncStorage.getItem("@jwt_token");
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnectedToNet(state.isConnected);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
-  //     const res = await axios.get("https://offline-pay.vercel.app/api/data", {
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${sessionToken}`,
-  //       },
-  //     });
-  //     const { logs, balance } = res.data;
-  //     setLogs(logs);
-  //     console.log(logs);
-      
-  //     setBalance(balance);
-  //   };
-  //   getLog().then();
-  //   setRefetch(false);
-  // }, [refetch]);
+  useEffect(() => {
+    const getLog = async () => {
+      if (!isConnectedToNet) return;
+      const sessionToken = await AsyncStorage.getItem("@jwt_token");
+      const resLog = await axios.get(
+        "https://offline-pay.vercel.app/api/data",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        }
+      );
+      const { logs, balance } = resLog.data;
+      setBalance(balance);
+      await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
+      await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+    };
+    getLog();
+    setRefetch(false);
+  }, [refetch]);
 
   const reFetch = () => {
     setRefetch(true);
@@ -101,7 +117,17 @@ export default function DashBoard({ name }: Props) {
         <Overlay
           isVisible={showLogMenu}
           onBackdropPress={toggleLogOverlay}
-        ></Overlay>
+          overlayStyle={styles.overlayLogs}
+        >
+          <Logs />
+          <Entypo
+            name="circle-with-cross"
+            size={50}
+            color="black"
+            style={styles.closeLogs}
+            onPress={toggleLogOverlay}
+          />
+        </Overlay>
       </View>
       <StatusBar style="auto" />
     </SafeAreaProvider>
@@ -175,5 +201,19 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 25,
     fontWeight: "500",
+  },
+  overlayLogs: {
+    height: "70%",
+    width: "90%",
+    borderRadius: 10,
+  },
+  closeLogs: {
+    position: "absolute",
+    marginLeft: "auto",
+    marginRight: "auto",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: "center",
   },
 });

@@ -37,18 +37,21 @@ export default function Login({ setLogin }: any) {
         message: "",
       });
       await AsyncStorage.setItem("@jwt_token", res.data.token);
-      const getLog = async () => {
-        const sessionToken = await AsyncStorage.getItem("@jwt_token");
-        const res = await axios.get("https://offline-pay.vercel.app/api/data", {
+
+      const sessionToken = await AsyncStorage.getItem("@jwt_token");
+      const resLog = await axios.get(
+        "https://offline-pay.vercel.app/api/data",
+        {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${sessionToken}`,
           },
-        });
-        const { logs, balance } = res.data;
-        await AsyncStorage.setItem("@current_balance", balance);
-        await AsyncStorage.setItem("@logs", JSON.stringify(logs));
-      }
+        }
+      );
+      const { logs, balance } = resLog.data;
+      await AsyncStorage.setItem("@current_balance", JSON.stringify(balance));
+      await AsyncStorage.setItem("@logs", JSON.stringify(logs));
+      
       Updates.reloadAsync();
     }
   };
